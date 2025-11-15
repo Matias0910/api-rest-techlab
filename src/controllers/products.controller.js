@@ -6,7 +6,6 @@ export const getAllProducts = async (req, res) => {
     if (category) {
         const productsByCategory = await Model.getProductsByCategory(category);
         
-        // Responder 404 si no se encuentran productos
         if (productsByCategory.length === 0) {
             return res.status(404).json({ error: `No se encontraron productos en la categoría: ${category}` });
         }
@@ -14,7 +13,6 @@ export const getAllProducts = async (req, res) => {
         return res.json(productsByCategory);
     }
     
-    // Si no hay categoría, trae todos
     const products = await Model.getAllProducts();
     res.json(products);
 };
@@ -53,15 +51,14 @@ export const getProductById = async (req, res) => {
 
 
 export const createProduct = async (req, res) => {
-    // CORRECCIÓN: Se agrega stock
-    const { name, price, categories, stock } = req.body; 
+    // Incluye imageUrl
+    const { name, price, categories, stock, imageUrl } = req.body; 
 
-    if (!name || price === undefined || !categories || stock === undefined) {
-        return res.status(422).json({ error: "El nombre, precio, categorías y stock son obligatorios" });
+    if (!name || price === undefined || !categories || stock === undefined || !imageUrl) {
+        return res.status(422).json({ error: "El nombre, precio, categorías, stock e URL de imagen son obligatorios" });
     }
     
-    // CORRECCIÓN: Se pasa stock al modelo
-    const product = await Model.createProduct({ name, price, categories, stock }); 
+    const product = await Model.createProduct({ name, price, categories, stock, imageUrl }); 
 
     if (!product) {
         return res.status(500).json({ error: "Error al crear el producto en la base de datos." });
@@ -73,15 +70,14 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
     const {id} = req.params;
-    // CORRECCIÓN: Se agrega stock
-    const { name, price, categories, stock } = req.body; 
+    // Incluye imageUrl
+    const { name, price, categories, stock, imageUrl } = req.body; 
 
-    if (!name || price === undefined || !categories || stock === undefined) {
-        return res.status(422).json({ error: "El nombre, precio, categorías y stock son obligatorios" });
+    if (!name || price === undefined || !categories || stock === undefined || !imageUrl) {
+        return res.status(422).json({ error: "El nombre, precio, categorías, stock e URL de imagen son obligatorios" });
     }
 
-    // CORRECCIÓN: Se pasa stock al modelo
-    const updated = await Model.updateProduct(id, { name, price, categories, stock });
+    const updated = await Model.updateProduct(id, { name, price, categories, stock, imageUrl });
     
     if (!updated) {
         return res.status(404).json({ error: "Producto no encontrado" });
@@ -98,8 +94,9 @@ export const updatePatchProduct = async (req, res) => {
     if (req.body.name !== undefined) data.name = req.body.name;
     if (req.body.price !== undefined) data.price = req.body.price;
     if (req.body.categories !== undefined) data.categories = req.body.categories;
-    // CORRECCIÓN: Se agrega stock a los datos que se pueden actualizar
     if (req.body.stock !== undefined) data.stock = req.body.stock;
+    // Incluye imageUrl
+    if (req.body.imageUrl !== undefined) data.imageUrl = req.body.imageUrl;
 
     if (Object.keys(data).length === 0) {
         return res.status(422).json({ error: "No se proporcionaron datos para actualizar" });

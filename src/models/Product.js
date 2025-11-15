@@ -1,118 +1,93 @@
 import { db } from "./firebase.js";
-
-import { 
-    collection, 
-    getDocs, 
-    doc, 
-    getDoc, 
-    addDoc, 
-    setDoc,
-    deleteDoc, 
-    updateDoc,
-    query,
-    where
-} from "firebase/firestore";
+import { collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, getDocs } from "firebase/firestore";
 
 const productsCollection = collection(db, "products");
 
-// Esta función trae todos los productos
+export const getProductsCollection = () => productsCollection;
+
+// READ: Obtener todos los productos
 export const getAllProducts = async () => {
-    try {
-      const snapshot = await getDocs(productsCollection);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error("Error fetching products from Firestore:", error);
-        return [];
-    }
+    const productsSnapshot = await getDocs(productsCollection);
+    return productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+// READ: Obtener productos por categoría (Filtrado en el servidor)
+export const getProductsByCategory = async (category) => {
+    const allProducts = await getAllProducts();
+    const normalizedCategory = category.toLowerCase();
+    
+    return allProducts.filter(product => 
+        product.categories.some(cat => cat.toLowerCase().includes(normalizedCategory))
+    );
+};
+
+// READ: Obtener un producto por ID
 export const getProductById = async (id) => {
-    try {
-        const productRef = doc(productsCollection, id);
-        const snapshot = await getDoc(productRef);
-        return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
-    } catch (error) {
-        console.error(error);
+    const productRef = doc(productsCollection, id);
+    const productSnap = await getDoc(productRef);
+    
+    if (!productSnap.exists()) {
         return null;
     }
+    return { id: productSnap.id, ...productSnap.data() };
 };
 
-// Trae todos y filtra localmente (case-insensitive)
-export const getProductsByCategory = async (category) => {
-    try {
-        const allProducts = await getAllProducts(); 
-
-        const filteredProducts = allProducts.filter(product => 
-            product.categories && product.categories.some(cat => 
-                cat.toLowerCase() === category.toLowerCase()
-            )
-        );
-
-        return filteredProducts;
-    } catch (error) {
-        console.error("Error al buscar productos por categoría:", error);
-        return [];
-    }
-}
-
-// CORRECCIÓN: Asegura devolver null en caso de error
+// CREATE: Crear un producto
 export const createProduct = async (data) => {
-    try {
-        const docRef = await addDoc(productsCollection, data);
-        return {id: docRef.id, ...data};
-    } catch (error) {
-        console.error(error);
-        return null; // Devuelve NULL si hay error
-    }
+    const newProductRef = doc(productsCollection); 
+    await setDoc(newProductRef, { 
+        ...data, 
+        createdAt: new Date().toISOString()
+    });
+    const productSnap = await getDoc(newProductRef);
+    return { id: newProductRef.id, ...productSnap.data() };
 };
 
-// CORRECCIÓN: Asegura devolver false en caso de error
-export const updateProduct = async (id, productData) => {
-    try {
-        const productRef = doc(productsCollection, id);
-        const snapshot = await getDoc(productRef);
-        if (!snapshot.exists()) {
-            return false;
-        }
+// UPDATE: Actualizar todo el producto (PUT)
+export const updateProduct = async (id, data) => {
+    const productRef = doc(productsCollection, id);
+    const productSnap = await getDoc(productRef);
 
-        await setDoc(productRef, productData);
-        return {id, ...productData};
-    } catch (error) {
-        console.error(error);
-        return false;
+    if (!productSnap.exists()) {
+        return null;
     }
+
+    await setDoc(productRef, { 
+        ...data,
+        updatedAt: new Date().toISOString()
+    });
+    
+    const updatedSnap = await getDoc(productRef);
+    return { id: updatedSnap.id, ...updatedSnap.data() };
 };
 
-// CORRECCIÓN: Asegura devolver false en caso de error
-export const updatePatchProduct = async (id, productData) => {
-    try {
-        const productRef = doc(productsCollection, id);
-        const snapshot = await getDoc(productRef);
-        if (!snapshot.exists()) {
-            return false;
-        }
+// UPDATE: Actualizar parcialmente el producto (PATCH)
+export const updatePatchProduct = async (id, data) => {
+    const productRef = doc(productsCollection, id);
+    const productSnap = await getDoc(productRef);
 
-        await updateDoc(productRef, productData);
-        return {id, ...productData};
-    } catch (error) {
-        console.error(error);
-        return false;
+    if (!productSnap.exists()) {
+        return null;
     }
+
+    await updateDoc(productRef, { 
+        ...data,
+        updatedAt: new Date().toISOString()
+    });
+    
+    const updatedSnap = await getDoc(productRef);
+    return { id: updatedSnap.id, ...updatedSnap.data() };
 };
 
-// CORRECCIÓN: Asegura devolver false en caso de error
+// DELETE: Eliminar un producto
 export const deleteProduct = async (id) => {
-    try {
-        const productRef = doc(productsCollection, id);
-        const snapshot = await getDoc(productRef);
-        if (!snapshot.exists()) {
-            return false;
-        }
+    const productRef = doc(productsCollection, id);
+    const productSnap = await getDoc(productRef);
 
-        await deleteDoc(productRef);
-        return true;
-    } catch (error) {
-        console.error(error);
+    if (!productSnap.exists()) {
         return false;
     }
+
+    await deleteDoc(productRef);
+    return true;
 };

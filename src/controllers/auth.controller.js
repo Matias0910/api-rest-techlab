@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt"; // <--- CORRECCIÓN: Cambiado de "bcryptjs" a "bcrypt"
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createUser, findUserByEmail } from "../models/User.js";
 
@@ -15,7 +15,6 @@ export const register = async (req, res) => {
         return res.status(409).json({ message: "El email ya está registrado" });
     }
 
-    // Usamos el factor 8
     const passwordHash = await bcrypt.hash(password, 8); 
 
     const user = await createUser(email, passwordHash);
@@ -45,8 +44,9 @@ export const login = async (req, res) => {
         return res.status(401).json({ error: "Credenciales inválidas" });
     }
 
+    // Duración del Token extendida a 7 días
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-        expiresIn: '1h', 
+        expiresIn: '7d', 
     });
 
     res.json({ token });

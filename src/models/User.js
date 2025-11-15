@@ -1,29 +1,29 @@
-import {db} from "./firebase.js";
-
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { db } from "./firebase.js";
+import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
 
 const usersCollection = collection(db, "users");
 
-export const createUser =  async (email, passwordHash) => {
-    try {
-        const docRef = await addDoc(usersCollection, {email, password: passwordHash});
-        return {id: docRef.id, email};
-    } catch (error) {
-        console.log(error);
+export const findUserByEmail = async (email) => {
+    const q = query(usersCollection, where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
     }
+    
+    const doc = querySnapshot.docs[0];
+    return { id: doc.id, ...doc.data() };
 };
 
-export const findUserByEmail = async (email) => {
-    try {
-        const q = query(usersCollection, where("email", "==", email));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const userDoc = snapshot.docs[0];
-        return { id: userDoc.id, ...userDoc.data() };  
-        } else {
-            return null;
-        }
-    } catch (error) {
-        console.log(error);
-    }
+export const createUser = async (email, password) => {
+    const newDocRef = doc(usersCollection); 
+    const newUser = {
+        email,
+        password,
+        createdAt: new Date().toISOString()
+    };
+    
+    await setDoc(newDocRef, newUser);
+
+    return { id: newDocRef.id, email: newUser.email };
 };
