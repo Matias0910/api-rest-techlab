@@ -37,45 +37,36 @@ export const getProductById = async (id) => {
     }
 };
 
-// 🛑 FUNCIÓN CORREGIDA: Trae todos y filtra localmente (case-insensitive)
+// Trae todos y filtra localmente (case-insensitive)
 export const getProductsByCategory = async (category) => {
     try {
-        // 1. Obtener TODOS los productos (puede ser costoso)
         const allProducts = await getAllProducts(); 
-        
-        // 2. Definir el término de búsqueda en minúsculas
-        const lowerCaseCategory = category.toLowerCase();
 
-        // 3. Filtrar los productos en Node.js
-        const filteredProducts = allProducts.filter(item => {
-            if (!item.categories || !Array.isArray(item.categories)) {
-                return false;
-            }
-
-            // Verifica si alguna categoría del producto (convertida a minúsculas)
-            // incluye el término de búsqueda (case-insensitive)
-            return item.categories.some(cat => 
-                cat.toLowerCase().includes(lowerCaseCategory)
-            );
-        });
+        const filteredProducts = allProducts.filter(product => 
+            product.categories && product.categories.some(cat => 
+                cat.toLowerCase() === category.toLowerCase()
+            )
+        );
 
         return filteredProducts;
     } catch (error) {
-        console.error("Error filtrando productos localmente:", error);
+        console.error("Error al buscar productos por categoría:", error);
         return [];
     }
-};
+}
 
-// Se revierte a la versión original, sin el campo categories_lower
+// CORRECCIÓN: Asegura devolver null en caso de error
 export const createProduct = async (data) => {
     try {
-      const docRef = await addDoc(productsCollection, data);
+        const docRef = await addDoc(productsCollection, data);
         return {id: docRef.id, ...data};
     } catch (error) {
-    console.error(error);
+        console.error(error);
+        return null; // Devuelve NULL si hay error
     }
 };
 
+// CORRECCIÓN: Asegura devolver false en caso de error
 export const updateProduct = async (id, productData) => {
     try {
         const productRef = doc(productsCollection, id);
@@ -84,14 +75,15 @@ export const updateProduct = async (id, productData) => {
             return false;
         }
 
-        // Se revierte a la versión original, sin lógica de categories_lower
         await setDoc(productRef, productData);
         return {id, ...productData};
     } catch (error) {
         console.error(error);
+        return false;
     }
 };
 
+// CORRECCIÓN: Asegura devolver false en caso de error
 export const updatePatchProduct = async (id, productData) => {
     try {
         const productRef = doc(productsCollection, id);
@@ -100,14 +92,15 @@ export const updatePatchProduct = async (id, productData) => {
             return false;
         }
 
-        // Se revierte a la versión original, sin lógica de categories_lower
         await updateDoc(productRef, productData);
         return {id, ...productData};
     } catch (error) {
         console.error(error);
+        return false;
     }
 };
 
+// CORRECCIÓN: Asegura devolver false en caso de error
 export const deleteProduct = async (id) => {
     try {
         const productRef = doc(productsCollection, id);
@@ -118,8 +111,8 @@ export const deleteProduct = async (id) => {
 
         await deleteDoc(productRef);
         return true;
-
     } catch (error) {
         console.error(error);
+        return false;
     }
 };
